@@ -1,21 +1,127 @@
 # -*- coding: utf8 -*-
-
 '''
-Created on 2014-11-24
-
+Created on 2014-12-1
+窗口运行监控
 @author: zhanghl
 '''
-from cn.zc.model.ProcessInfo import ProcessInfo, MyEncoder, \
-    MyDecoder
+from cn.tools import FileTools
+from cn.zc.model.ProcessInfo import WindowInfo, MyEncoder, MyDecoder, \
+    ProcessInfo
 import logging
-import os.path
+import os
+import psutil
+import pyHook
 import pythoncom
 import threading
 import time
+import win32gui
+import win32process
 import wmi
 
+windowInfo = WindowInfo()
+allInfos = {}
+
+class hook(object):
+    
+    def __init__(self,
+                 filePath = "c:/tmp",toolsMain =None):
+
+        dayTime = time.strftime("%Y%m%d");
+        fileName = filePath + "/windowInfo_" + dayTime + ".json"
+        self.fileName = fileName
+        self.toolsMain = toolsMain
+        self.__loadData(self.fileName)
+        self.status = True
+    
+    def __loadData(self,fileName):
+        global allInfos
+        allInfos = FileTools.loadDataFromFile(fileName)
+
+    def stop(self):
+        self.status = False
+    
+    def onKeyboardEvent(self,event):
+        '''
+            监控监控
+        '''
+        if str(event.Key) == 'F12':  # 按下F12后终止
+            print "stop....."
+            self.toolsMain.stop()
+#             win32api.PostQuitMessage()
+#             self.status = False
+        else:
+            pass
+        self.doEventExecute(event.Window)
+        return True
+    
+    def onMouseEvent(self,event):
+        '''
+            鼠标监控
+        ''' 
+        self.doEventExecute(event.Window)
+        return True
+
+    def getPidByWindow(self,window=0):
+        if win32gui.IsWindowVisible (window) and win32gui.IsWindowEnabled (window):
+            _, found_pid = win32process.GetWindowThreadProcessId (window)
+            return found_pid 
+        else:
+            return 0
+         
+    def doEventExecute(self,window):
+        global windowInfo,allInfos 
+        t = windowInfo.name
+        pid = self.getPidByWindow(window)
+        p = psutil.Process(pid)
+        pName = p.name()
+        if t==pName:
+            pass
+        else:
+            #切换当前窗口
+            currentTime = time.time()
+            useTime = currentTime - windowInfo.startTime
+            windowInfo.useduration = windowInfo.useduration + useTime
+            #记录上次窗口使用时间
+            allInfos[windowInfo.name] = windowInfo
+
+            if allInfos.has_key(pName):
+                windowInfo = allInfos.get(pName)
+                windowInfo.startTime = time.time()
+                windowInfo.count = windowInfo.count+1
+            else:
+                windowInfo = WindowInfo(name=pName,startTime=currentTime)
+                
+    def saveDataToFile(self):
+        global allInfos
+        while True & self.status:
+            time.sleep(60)
+            FileTools.saveToFile(allInfos, self.fileName)
+            
+        
+    def main(self):
+        global allInfos
+        hm = pyHook.HookManager()  
+        
+    # 监控键盘  
+        hm.KeyDown = self.onKeyboardEvent
+        hm.HookKeyboard()  
+
+# MouseMove = property(fset=SubscribeMouseMove)
+#   MouseLeftUp = property(fset=SubscribeMouseLeftUp)
+#   MouseLeftDown = property(fset=SubscribeMouseLeftDown)
+#   MouseLeftDbl = property(fset=SubscribeMouseLeftDbl)
+#   MouseRightUp = property(fset=SubscribeMouseRightUp)
+#   MouseRightDown
+        hm.MouseLeftDown = self.onMouseEvent
+        hm.MouseRightDown = self.onMouseEvent
+        hm.MouseWheel = self.onMouseEvent
+        hm.HookMouse()
+        
+        threading.Thread(target=self.saveDataToFile).start()
+        
+
 class Watch(object):
-    '''
+    ''' 
     classdocs
     '''
     def __init__(self
@@ -37,7 +143,7 @@ class Watch(object):
         dayTime = time.strftime("%Y%m%d");
         fileName = filePath + "/processInfo_" + dayTime + ".json"
         self.fileName = fileName
-        
+        self.status = True
         self.__loadData(fileName)
         
         #黑名单
@@ -141,10 +247,28 @@ class Watch(object):
     
     #保存到文件中，按天
     def saveFile(self):
-        msg = self.jsonEncode.encode(self.processInfo)
-        with open(self.fileName,'w') as f:
-            f.write(msg)
-            f.flush()
+        while not self.status:
+            time.sleep(60)
+            msg = self.jsonEncode.encode(self.processInfo)
+            with open(self.fileName,'w') as f:
+                f.write(msg)
+                f.flush()
+    
+    def stop(self):
+        self.status = False
+        self.thread1.stop()
+        self.thread2.stop()
+    
+    def main(self):
+        t = threadWatch(self.watch_creation,self)
+        t.start()
+        t2 = threadWatch(self.watch_deletion,self)
+        t2.start()
+        
+        self.thread1 = t
+        self.thread2 = t2
+        threading.Thread(target=self.saveFile).start()
+        print "process watch start.............."
 #监控线程
 class threadWatch(threading.Thread):
 
@@ -172,25 +296,12 @@ class threadWatch(threading.Thread):
             pythoncom.CoUninitialize ()
             
     def stop(self):
-        logging.info(self.name + " thread stop")
+        logging.info(self.name + " thread status")
         self.thread_stop = True
+ 
+    
+if __name__ == "__main__2":
+    Watch().main()
+    hook().main()
+    pythoncom.PumpMessages()
 
-watch = Watch()
-t = threadWatch("creation",watch)
-t.start()
-t2 = threadWatch("deletion",watch)
-t2.start()
-
-
-while True:
-    time.sleep(60)
-    watch.saveFile()
-
-print "start.............."
-
-# wmi = wmi.WMI()
-# wathc1 = wmi.Win32_Process.watch_for('creation')
-# while True:
-#     process = wathc1()
-#     print process.Caption
-pythoncom.PumpMessages()

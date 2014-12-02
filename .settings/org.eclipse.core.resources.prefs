@@ -1,6 +1,7 @@
 eclipse.preferences.version=1
 encoding//cn/zc/main.py=utf8
 encoding//cn/zc/model/ProcessInfo.py=utf8
-encoding//cn/zc/service/Watch.py=utf8
+encoding//cn/zc/service/mywindow.py=utf8
 encoding//test/threadTest.py=utf8
+encoding//test/win32test.py=utf8
 encoding/sendMsg.py=utf8
