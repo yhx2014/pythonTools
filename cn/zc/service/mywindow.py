@@ -47,6 +47,7 @@ class hook(object):
         if str(event.Key) == 'F12':  # 按下F12后终止
             print "stop....."
             self.toolsMain.stop()
+            return False
 #             win32api.PostQuitMessage()
 #             self.status = False
         else:
@@ -79,16 +80,18 @@ class hook(object):
         else:
             #切换当前窗口
             currentTime = time.time()
-            useTime = currentTime - windowInfo.startTime
-            windowInfo.useduration = windowInfo.useduration + useTime
-            #记录上次窗口使用时间
-            allInfos[windowInfo.name] = windowInfo
+            if t!='':
+                useTime = currentTime - windowInfo.startTime
+                windowInfo.useduration = windowInfo.useduration + useTime
+                #记录上次窗口使用时间
+                allInfos[windowInfo.name] = windowInfo
 
             if allInfos.has_key(pName):
                 windowInfo = allInfos.get(pName)
                 windowInfo.startTime = time.time()
                 windowInfo.count = windowInfo.count+1
             else:
+                
                 windowInfo = WindowInfo(name=pName,startTime=currentTime)
                 
     def saveDataToFile(self):
@@ -247,7 +250,7 @@ class Watch(object):
     
     #保存到文件中，按天
     def saveFile(self):
-        while not self.status:
+        while self.status:
             time.sleep(60)
             msg = self.jsonEncode.encode(self.processInfo)
             with open(self.fileName,'w') as f:
