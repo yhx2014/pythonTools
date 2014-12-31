@@ -1,4 +1,7 @@
 eclipse.preferences.version=1
+encoding//cn/game/game2048.py=utf-8
+encoding//cn/zc/MyFrame.py=utf8
+encoding//cn/zc/dao/ProcessDao.py=utf8
 encoding//cn/zc/main.py=utf8
 encoding//cn/zc/model/ProcessInfo.py=utf8
 encoding//cn/zc/service/mywindow.py=utf8

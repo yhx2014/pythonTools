@@ -4,7 +4,7 @@ Created on 2014-12-1
 窗口运行监控
 @author: zhanghl
 '''
-from cn.tools import FileTools
+from cn.tools import FileTools, Md5Tools
 from cn.zc.model.ProcessInfo import WindowInfo, MyEncoder, MyDecoder, \
     ProcessInfo
 import logging
@@ -27,6 +27,7 @@ class hook(object):
                  filePath = "c:/tmp",toolsMain =None):
 
         dayTime = time.strftime("%Y%m%d");
+        self.dayTime = time.strftime("%Y-%m-%d");
         fileName = filePath + "/windowInfo_" + dayTime + ".json"
         self.fileName = fileName
         self.toolsMain = toolsMain
@@ -71,28 +72,30 @@ class hook(object):
          
     def doEventExecute(self,window):
         global windowInfo,allInfos 
-        t = windowInfo.name
+        t = windowInfo.md5
         pid = self.getPidByWindow(window)
         p = psutil.Process(pid)
-        pName = p.name()
+        exeStr = p.exe()
+        exeName = p.name()
+        pName = Md5Tools.getStrMd5(exeStr)
         if t==pName:
             pass
         else:
             #切换当前窗口
             currentTime = time.time()
-            if t!='':
+            if windowInfo.executablePath!='':
                 useTime = currentTime - windowInfo.startTime
                 windowInfo.useduration = windowInfo.useduration + useTime
+                windowInfo.dt = self.dayTime
                 #记录上次窗口使用时间
-                allInfos[windowInfo.name] = windowInfo
+                allInfos[windowInfo.md5] = windowInfo
 
             if allInfos.has_key(pName):
                 windowInfo = allInfos.get(pName)
                 windowInfo.startTime = time.time()
                 windowInfo.count = windowInfo.count+1
             else:
-                
-                windowInfo = WindowInfo(name=pName,startTime=currentTime)
+                windowInfo = WindowInfo(name=exeName,startTime=currentTime,md5=pName,executablePath=exeStr)
                 
     def saveDataToFile(self):
         global allInfos

@@ -3,7 +3,7 @@ Created on 2014-12-1
 
 @author: zhanghl
 '''
-from cn.zc.model.ProcessInfo import MyDecoder, MyEncoder, WindowInfo
+from cn.zc.model.ProcessInfo import MyDecoder, MyEncoder
 import os
 
 def saveToFile(data,fileName):

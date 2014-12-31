@@ -5,6 +5,7 @@ Created on 2014-11-24
 @author: zhanghl
 '''
 import json
+from cn.tools import Md5Tools
 
 class ProcessInfo(object):
     '''
@@ -91,6 +92,9 @@ class WindowInfo(object):
                 useduration = 0l, #运行时长 秒
                 count = 0,        #运行次数
                 desc = ''        #描述
+                ,executablePath='' #运行文件路径
+                ,md5=''
+                ,dt=''  #日期，为统计天数据用
                  ):
         self.name = name
         self.startTime= startTime
@@ -98,7 +102,9 @@ class WindowInfo(object):
         self.useduration = useduration
         self.count= count
         self.desc= desc
-
+        self.executablePath = executablePath
+        self.md5 = Md5Tools.getStrMd5(executablePath)
+        self.dt = dt
 
 # 
 # p = ProcessInfo(name='adfa',startTime=1231)
